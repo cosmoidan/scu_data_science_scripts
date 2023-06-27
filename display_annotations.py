@@ -5,9 +5,11 @@
 - Author: Dan Bright, cosmoid@tuta.io.
 - Description: A script to display NER tags from 
   JSON formatted annotated data files.
+- Version: 1.2
 """
 
 import os, json, random, re
+import numpy as np
 from spacy import displacy
 
 ANNO_FILE_PATH: str = "../../data/sample/train/json"
@@ -60,13 +62,41 @@ class DisplayAnnotations:
     @staticmethod
     def _gen_colors(annotations) -> dict:
         # generates random colors & assigns them to named entity classes
-        label_count: int = len(annotations[0]["labels"])
-        rand_rgb: list[tuple] = [
-            tuple(f"{random.randint(125,255):03d}" for r in range(3))
-            for l in range(label_count)
-        ]
-        colors: list[str] = [f"rgb({c[0]},{c[1]},{c[2]})" for c in rand_rgb]
-        return dict(zip(annotations[0]["labels"], colors))
+        _label_count: int = len(annotations[0]["labels"])
+        _min_color_diff: int = 10
+
+        colors = np.array([np.random.randint(128, 255, 3, dtype=int)])
+        for _ in range(_label_count - 1):
+            val = np.array([np.random.randint(128, 255, 3, dtype=int)])
+            created = False
+            while not created:
+                if (
+                    [
+                        val[:, 0] - _min_color_diff,
+                        val[:, 0],
+                        val[:, 0] + _min_color_diff,
+                    ]
+                    not in colors[:, 0]
+                    or [
+                        val[:, 1] - _min_color_diff,
+                        val[:, 1],
+                        val[:, 1] + _min_color_diff,
+                    ]
+                    not in colors[:, 1]
+                    or [
+                        val[:, 2] - _min_color_diff,
+                        val[:, 2],
+                        val[:, 2] + _min_color_diff,
+                    ]
+                    not in colors[:, 2]
+                ):
+                    colors = np.append(colors, val, axis=0)
+                    created = True
+                else:
+                    val = np.array([np.random.randint(128, 255, 3, dtype=int)])
+
+        colors_lst: list[str] = [f"rgb({c[0]},{c[1]},{c[2]})" for c in colors]
+        return dict(zip(annotations[0]["labels"], colors_lst))
 
     def _print_annotations(self) -> None:
         # displays tagged annotations in Jupyter notebook or serves as web page
