@@ -33,9 +33,9 @@ class DisplayAnnotations:
         self._jupyter: bool = jupyter
         self._annotations: list[dict] = []
         self._label_colors: dict = dict()
-        # run display
+        # run methods
         self._read_json_files()
-        self._print_annotations()
+        self._visualise_annotations()
 
     def _read_json_files(self) -> None:
         """Read all JSON files in the given directory and return their contents
@@ -98,7 +98,7 @@ class DisplayAnnotations:
         colors_lst: list[str] = [f"rgb({c[0]},{c[1]},{c[2]})" for c in colors]
         return dict(zip(annotations[0]["labels"], colors_lst))
 
-    def _print_annotations(self) -> None:
+    def _visualise_annotations(self) -> None:
         # displays tagged annotations in Jupyter notebook or serves as web page
         if self._jupyter:
             for a in self._annotations:
