@@ -15,13 +15,13 @@ from spacy import displacy
 
 JUPYTER: bool = False  # Running on Jupyter notebook? True|False
 SHOW_VISUAL: bool = True  # whether to show a visual representation True|False
-DISPLAY_SERVER_HOST: str = "127.0.0.1"  # server host, if displaying on web (quoted string)
-DISPLAY_SERVER_PORT: int = 8753  # server port, if displaying on web (integer - unquoted)
+DISPLAY_SERVER_HOST: str = "127.0.0.1"  # server host, if displaying on web (string)
+DISPLAY_SERVER_PORT: int = 8753  # server port, if displaying on web (integer)
 WRITE_JSON_FILE: bool = False  # write JSON formatted output file? True|False
 WRITE_EXCEL_FILE: bool = False  # write EXCEL formatted output file? True|False
-ANNO_FILE_PATH: str = "../../data/sample/train/json"  # path to directory containing input JSON files (quoted string)
-OUTPUT_JSON_PATH: str = "../../data/annotations.json"  # path to JSON formatted output file (if any) (quoted string)
-OUTPUT_EXCEL_PATH: str = "../../data/annotations.xlsx"  # path to EXCEL formatted output file (if any) (quoted string)
+ANNO_FILE_PATH: str = "../../data/sample/train/json"  # path to directory containing input JSON files (string)
+OUTPUT_JSON_PATH: str = "../../data/annotations.json"  # path to JSON formatted output file (if any) (string)
+OUTPUT_EXCEL_PATH: str = "../../data/annotations.xlsx"  # path to EXCEL formatted output file (if any) (string)
 
 
 class DisplayAnnotations:
