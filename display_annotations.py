@@ -5,7 +5,7 @@
 - Author: Dan Bright, cosmoid@tuta.io.
 - Description: A script to display NER tags from 
   JSON formatted annotated data files.
-- Version: 1.3
+- Version: 1.5
 """
 
 import os, json, re
@@ -13,12 +13,15 @@ import numpy as np
 import pandas as pd
 from spacy import displacy
 
-JUPYTER: bool = False
-WRITE_JSON_FILE: bool = False
-WRITE_EXCEL_FILE: bool = True
-ANNO_FILE_PATH: str = "../../data/sample/train/json"
-OUTPUT_JSON_PATH: str = "../../data/annotations.json"
-OUTPUT_EXCEL_PATH: str = "../../data/annotations.xlsx"
+JUPYTER: bool = False  # Running on Jupyter notebook? True|False
+SHOW_VISUAL: bool = True  # whether to show a visual representation True|False
+DISPLAY_SERVER_HOST: str = "127.0.0.1"  # server host, if displaying on web (quoted string)
+DISPLAY_SERVER_PORT: int = 8753  # server port, if displaying on web (integer - unquoted)
+WRITE_JSON_FILE: bool = False  # write JSON formatted output file? True|False
+WRITE_EXCEL_FILE: bool = False  # write EXCEL formatted output file? True|False
+ANNO_FILE_PATH: str = "../../data/sample/train/json"  # path to directory containing input JSON files (quoted string)
+OUTPUT_JSON_PATH: str = "../../data/annotations.json"  # path to JSON formatted output file (if any) (quoted string)
+OUTPUT_EXCEL_PATH: str = "../../data/annotations.xlsx"  # path to EXCEL formatted output file (if any) (quoted string)
 
 
 class DisplayAnnotations:
@@ -26,21 +29,28 @@ class DisplayAnnotations:
     Class that displays NER tags from annotated data.
 
     Consumes:
-        - dir_path: str = path directory of JSON annotation files
-        - jupyter: bool = whether script is being run as a Jupyter notebook
+        - dir_path: str = path directory of JSON annotation files.
+        - jupyter: bool = whether script is being run as a Jupyter notebook.
         - write_json_file: bool = whether to write a JSON file containing entity classes
-          and their labelled tokens
+          and their labelled tokens.
         - write_excel_file: bool = whether to write an EXCEL file containing entity classes
-          and their labelled tokens
-        - output_json_url: str = the URL of the output JSON file (optional)
-        - output_excel_url: str = the URL of the output EXCEL file (optional)
+          and their labelled tokens.
+        - show_visual: bool = whether to show a visual representation (displaCy).
+          Note: Visual display renders in the output cell if run in a Jupyter
+          notebook, or as a web page if run as a script.
+        - display_host: str = display server host (if displaying on a web page).
+        - display_port: int = display server port (if displaying on a web page).
+        - output_json_url: str = the URL of the output JSON file (optional).
+        - output_excel_url: str = the URL of the output EXCEL file (optional).
     Produces:
-        - Textual data from JSON formatted annotation files, tagged with
-          named entities
-        - JSON formatted file containing tokens (strings) that were annotated
-          for each entity class (optional)
-        - EXCEL formatted file containing tokens (strings) that were annotated
-          for each entity class (optional)
+        - Visual representation of annotated data from JSON formatted files, tagged with
+          named entities. Note: If running in a Jupyter notebook (JUPYTER parameter set to True),
+          the visual representation will display in the Jupyter output cell. If run as
+          standalone script (JUPYTER parameter set to False), it will display as a web page.
+        - JSON formatted file containing tokens (strings) that were annotated.
+          for each entity class (optional).
+        - EXCEL formatted file containing tokens (strings) that were annotated.
+          for each entity class (optional).
     Notes:
         - Record number is derived from the filenames of the consumed text files, which
           MUST be named according to the convention of `record_n.txt`, where n is record number.
@@ -50,8 +60,11 @@ class DisplayAnnotations:
         self,
         dir_path: str,
         jupyter: bool,
-        write_json_file: bool = False,
-        write_excel_file: bool = False,
+        write_json_file: bool = False,  # default False
+        write_excel_file: bool = False,  # default False
+        show_visual: bool = True,  # default True
+        display_host: str = "127.0.0.1",  # default localhost
+        display_port: int = 8753,  # default 8753
         output_json_url: str = "",
         output_excel_url: str = "",
     ) -> None:
@@ -63,10 +76,12 @@ class DisplayAnnotations:
         self._annotations: list[dict] = []
         self._output: list[dict(list)] = []
         self._label_colors: dict = dict()
-        # run methods
+        self._display_host = display_host
+        self._display_port = display_port
+        # run methods [note: do not change running order]
         self._read_json_files()
-        # self._visualise_annotations()
         self._format_output()
+        self._visualise_annotations() if show_visual else None
         self._write_json_output() if write_json_file else None
         self._write_excel_output() if write_excel_file else None
 
@@ -150,10 +165,10 @@ class DisplayAnnotations:
                 manual=True,
                 style="ent",
                 options={"colors": self._gen_colors(self._annotations)},
-                host="127.0.0.1",
+                host=self._display_host,
                 page=True,
                 minify=True,
-                port=8753,
+                port=self._display_port,
             )
 
     def _format_output(self) -> None:
@@ -180,10 +195,13 @@ class DisplayAnnotations:
 
 if __name__ == "__main__":
     DisplayAnnotations(
-        dir_path=ANNO_FILE_PATH,  # path to directory containing input JSON files (string)
-        jupyter=JUPYTER,  # Running on Jupyter notebook? True|False
-        write_json_file=WRITE_JSON_FILE,  # write JSON formatted output file? True|False
-        write_excel_file=WRITE_EXCEL_FILE,  # write EXCEL formatted output file? True|False
-        output_json_url=OUTPUT_JSON_PATH,  # path to JSON formatted output file (if any) (string)
-        output_excel_url=OUTPUT_EXCEL_PATH,  # path to EXCEL formatted output file (if any) (string)
+        dir_path=ANNO_FILE_PATH,
+        jupyter=JUPYTER,
+        show_visual=SHOW_VISUAL,
+        write_json_file=WRITE_JSON_FILE,
+        write_excel_file=WRITE_EXCEL_FILE,
+        display_host=DISPLAY_SERVER_HOST,
+        display_port=DISPLAY_SERVER_PORT,
+        output_json_url=OUTPUT_JSON_PATH,
+        output_excel_url=OUTPUT_EXCEL_PATH,
     )
