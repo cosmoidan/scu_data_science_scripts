@@ -8,14 +8,17 @@
 - Version: 1.3
 """
 
-import os, json, random, re
+import os, json, re
 import numpy as np
+import pandas as pd
 from spacy import displacy
 
 JUPYTER: bool = False
-WRITE_OUTPUT_FILE: bool = False
+WRITE_JSON_FILE: bool = False
+WRITE_EXCEL_FILE: bool = True
 ANNO_FILE_PATH: str = "../../data/sample/train/json"
-OUTPUT_FILE_PATH: str = "../../data/annotations.json"
+OUTPUT_JSON_PATH: str = "../../data/annotations.json"
+OUTPUT_EXCEL_PATH: str = "../../data/annotations.xlsx"
 
 
 class DisplayAnnotations:
@@ -25,13 +28,18 @@ class DisplayAnnotations:
     Consumes:
         - dir_path: str = path directory of JSON annotation files
         - jupyter: bool = whether script is being run as a Jupyter notebook
-        - write_output_file: bool = whether to write a JSON file containing entity classes
+        - write_json_file: bool = whether to write a JSON file containing entity classes
           and their labelled tokens
-        - output_file_url: str = the URL of the output JSON file (optional)
+        - write_excel_file: bool = whether to write an EXCEL file containing entity classes
+          and their labelled tokens
+        - output_json_url: str = the URL of the output JSON file (optional)
+        - output_excel_url: str = the URL of the output EXCEL file (optional)
     Produces:
         - Textual data from JSON formatted annotation files, tagged with
           named entities
         - JSON formatted file containing tokens (strings) that were annotated
+          for each entity class (optional)
+        - EXCEL formatted file containing tokens (strings) that were annotated
           for each entity class (optional)
     Notes:
         - Record number is derived from the filenames of the consumed text files, which
@@ -42,19 +50,25 @@ class DisplayAnnotations:
         self,
         dir_path: str,
         jupyter: bool,
-        write_output_file: bool = False,
-        output_file_url: str = "",
+        write_json_file: bool = False,
+        write_excel_file: bool = False,
+        output_json_url: str = "",
+        output_excel_url: str = "",
     ) -> None:
         # define variables
         self._dir_path: str = dir_path
         self._jupyter: bool = jupyter
-        self._output_file_url = output_file_url
+        self._output_json_url = output_json_url
+        self._output_excel_url = output_excel_url
         self._annotations: list[dict] = []
+        self._output: list[dict(list)] = []
         self._label_colors: dict = dict()
         # run methods
         self._read_json_files()
-        self._visualise_annotations()
-        self._write_json_output() if write_output_file else None
+        # self._visualise_annotations()
+        self._format_output()
+        self._write_json_output() if write_json_file else None
+        self._write_excel_output() if write_excel_file else None
 
     def _read_json_files(self) -> None:
         """Read all JSON files in the given directory and return their contents
@@ -142,8 +156,8 @@ class DisplayAnnotations:
                 port=8753,
             )
 
-    def _write_json_output(self) -> None:
-        output: list[dict(list)] = []
+    def _format_output(self) -> None:
+        # creates formatted output, for JSON/EXCEL
         for record in self._annotations:
             rec_output: dict(list) = dict()
             rec_output["RECORD_ID"] = record["rec_num"]
@@ -151,15 +165,25 @@ class DisplayAnnotations:
                 rec_output.setdefault(ent["label"], []).append(
                     record["text"][ent["start"] : ent["end"]]
                 )
-            output.append(rec_output)
-        with open(self._output_file_url, "w") as fp:
-            json.dump(output, fp)
+            self._output.append(rec_output)
+
+    def _write_json_output(self) -> None:
+        # writes formatted output to JSON file
+        with open(self._output_json_url, "w") as fp:
+            json.dump(self._output, fp)
+
+    def _write_excel_output(self) -> None:
+        # writes formatted output to EXCEL file
+        df = pd.read_json(json.dumps(self._output))
+        df.to_excel(self._output_excel_url)
 
 
 if __name__ == "__main__":
     DisplayAnnotations(
         dir_path=ANNO_FILE_PATH,  # path to directory containing input JSON files (string)
         jupyter=JUPYTER,  # Running on Jupyter notebook? True|False
-        write_output_file=WRITE_OUTPUT_FILE,  # write JSON formatted output file? True|False
-        output_file_url=OUTPUT_FILE_PATH,  # path to JSON formatted output file (if any) (string)
+        write_json_file=WRITE_JSON_FILE,  # write JSON formatted output file? True|False
+        write_excel_file=WRITE_EXCEL_FILE,  # write EXCEL formatted output file? True|False
+        output_json_url=OUTPUT_JSON_PATH,  # path to JSON formatted output file (if any) (string)
+        output_excel_url=OUTPUT_EXCEL_PATH,  # path to EXCEL formatted output file (if any) (string)
     )
