@@ -5,7 +5,7 @@
 - Author: Dan Bright, cosmoid@tuta.io.
 - Description: A script to display NER tags from 
   JSON formatted annotated data files.
-- Version: 1.5
+- Version: 1.6
 """
 
 import os, json, re
@@ -13,12 +13,15 @@ import numpy as np
 import pandas as pd
 from spacy import displacy
 
-JUPYTER: bool = False  # Running on Jupyter notebook? True|False
-SHOW_VISUAL: bool = True  # whether to show a visual representation True|False
+JUPYTER: bool = False  # Running on Jupyter notebook? (True|False)
+SHOW_VISUAL: bool = True  # whether to show a visual representation (True|False)
 DISPLAY_SERVER_HOST: str = "127.0.0.1"  # server host, if displaying on web (string)
 DISPLAY_SERVER_PORT: int = 8753  # server port, if displaying on web (integer)
-WRITE_JSON_FILE: bool = False  # write JSON formatted output file? True|False
-WRITE_EXCEL_FILE: bool = False  # write EXCEL formatted output file? True|False
+WRITE_JSON_FILE: bool = False  # write JSON formatted output file? (True|False)
+WRITE_EXCEL_FILE: bool = False  # write EXCEL formatted output file? (True|False)
+OUTPUT_EXCEL_MELT: bool = True  # reshape output XLSX using Pandas to yield RECORD_ID, NAME, VALUE (True|False)
+OUTPUT_EXCEL_SORT_COL: str = "RECORD_ID"  # name of col to sort output XLSX by (string)
+OUTPUT_RECORD_ID_NAME: str = "RECORD_ID"  # name to assign to record ID key/column in output XLSX / JSON (if any) (string)
 ANNO_FILE_PATH: str = "../../data/sample/test/json"  # path to directory containing input JSON files (string)
 OUTPUT_JSON_PATH: str = "../../data/annotations.json"  # path to JSON formatted output file (if any) (string)
 OUTPUT_EXCEL_PATH: str = "../../data/annotations.xlsx"  # path to EXCEL formatted output file (if any) (string)
@@ -35,6 +38,9 @@ class DisplayAnnotations:
           and their labelled tokens.
         - write_excel_file: bool = whether to write an EXCEL file containing entity classes
           and their labelled tokens.
+        - output_excel_melt: bool = reshape output XLSX using Pandas to yield RECORD_ID, NAME, VALUE
+        - output_excel_sort_col: str = name of column to sort output XLSX by as default
+        - output_record_id_name: str = name to assign to record ID key/column in output XLSX/JSON (if any)
         - show_visual: bool = whether to show a visual representation (displaCy).
           Note: Visual display renders in the output cell if run in a Jupyter
           notebook, or as a web page if run as a script.
@@ -62,6 +68,9 @@ class DisplayAnnotations:
         jupyter: bool,
         write_json_file: bool = False,  # default False
         write_excel_file: bool = False,  # default False
+        output_excel_melt: bool = True,  # default True
+        output_record_id_name: str = "RECORD_ID",  # default RECORD_ID
+        output_excel_sort_col: str = "RECORD_ID",  # default RECORD_ID
         show_visual: bool = True,  # default True
         display_host: str = "127.0.0.1",  # default localhost
         display_port: int = 8753,  # default 8753
@@ -71,13 +80,16 @@ class DisplayAnnotations:
         # define variables
         self._dir_path: str = dir_path
         self._jupyter: bool = jupyter
-        self._output_json_url = output_json_url
-        self._output_excel_url = output_excel_url
+        self._output_json_url: str = output_json_url
+        self._output_excel_url: str = output_excel_url
+        self._output_excel_melt: bool = output_excel_melt
+        self._output_record_id_name: str = output_record_id_name
+        self._output_excel_sort_col: str = output_excel_sort_col
         self._annotations: list[dict] = []
         self._output: list[dict(list)] = []
         self._label_colors: dict = dict()
-        self._display_host = display_host
-        self._display_port = display_port
+        self._display_host: str = display_host
+        self._display_port: int = display_port
         # run methods [note: do not change running order]
         self._read_json_files()
         self._format_output()
@@ -93,13 +105,15 @@ class DisplayAnnotations:
                 with open(os.path.join(self._dir_path, filename), "r") as file:
                     annotation = json.load(file)
                     for paragraph in annotation["annotations"]:
+                        entities = paragraph[1]["entities"]
+                        text = paragraph[0]
                         ents: list[dict] = []
-                        for e in paragraph[1]["entities"]:
+                        for e in entities:
                             ents.append({"start": e[0], "end": e[1], "label": e[2]})
                         self._annotations.append(
                             {
                                 "labels": annotation["classes"],
-                                "text": paragraph[0],
+                                "text": text,
                                 "ents": ents,
                                 "title": filename,
                                 "rec_num": int(re.findall(r"\d+", filename)[0]),
@@ -175,7 +189,7 @@ class DisplayAnnotations:
         # creates formatted output, for JSON/EXCEL
         for record in self._annotations:
             rec_output: dict(list) = dict()
-            rec_output["RECORD_ID"] = record["rec_num"]
+            rec_output[self._output_record_id_name] = record["rec_num"]
             for ent in record["ents"]:
                 rec_output.setdefault(ent["label"], []).append(
                     record["text"][ent["start"] : ent["end"]]
@@ -190,6 +204,15 @@ class DisplayAnnotations:
     def _write_excel_output(self) -> None:
         # writes formatted output to EXCEL file
         df = pd.read_json(json.dumps(self._output))
+        if self._output_excel_melt:
+            df = pd.melt(
+                df,
+                id_vars=[self._output_record_id_name],
+                value_vars=[e for e in self._output[0].keys()],
+                var_name="NAME",
+                value_name="VALUE",
+            )
+            df = df.dropna(subset=["VALUE"]).sort_values(self._output_excel_sort_col)
         df.to_excel(self._output_excel_url)
 
 
@@ -200,6 +223,9 @@ if __name__ == "__main__":
         show_visual=SHOW_VISUAL,
         write_json_file=WRITE_JSON_FILE,
         write_excel_file=WRITE_EXCEL_FILE,
+        output_excel_melt=OUTPUT_EXCEL_MELT,
+        output_excel_sort_col=OUTPUT_EXCEL_SORT_COL,
+        output_record_id_name=OUTPUT_RECORD_ID_NAME,
         display_host=DISPLAY_SERVER_HOST,
         display_port=DISPLAY_SERVER_PORT,
         output_json_url=OUTPUT_JSON_PATH,
