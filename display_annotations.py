@@ -23,8 +23,8 @@ OUTPUT_EXCEL_MELT: bool = True  # reshape output XLSX using Pandas to yield RECO
 OUTPUT_EXCEL_SORT_COL: str = "RECORD_ID"  # name of col to sort output XLSX by (string)
 OUTPUT_RECORD_ID_NAME: str = "RECORD_ID"  # name to assign to record ID key/column in output XLSX / JSON (if any) (string)
 ANNO_FILE_PATH: str = "../../data/sample/test/json"  # path to directory containing input JSON files (string)
-OUTPUT_JSON_PATH: str = "../../data/annotations.json"  # path to JSON formatted output file (if any) (string)
-OUTPUT_EXCEL_PATH: str = "../../data/annotations.xlsx"  # path to EXCEL formatted output file (if any) (string)
+OUTPUT_JSON_PATH: str = "../../data/output/annotations.json"  # path to JSON formatted output file (if any) (string)
+OUTPUT_EXCEL_PATH: str = "../../data/output/annotations.xlsx"  # path to EXCEL formatted output file (if any) (string)
 
 
 class DisplayAnnotations:
